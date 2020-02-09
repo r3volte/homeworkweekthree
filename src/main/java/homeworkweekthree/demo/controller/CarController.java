@@ -3,7 +3,6 @@ package homeworkweekthree.demo.controller;
 import homeworkweekthree.demo.model.Car;
 import homeworkweekthree.demo.service.CarService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Resource;
 import org.springframework.hateoas.Resources;
 import org.springframework.http.HttpStatus;
@@ -12,15 +11,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
-
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 
 @RestController
 @RequestMapping(value = "/api/cars",
         produces = {MediaType.APPLICATION_JSON_VALUE,
-                    MediaType.APPLICATION_XHTML_XML_VALUE})
+                MediaType.APPLICATION_XHTML_XML_VALUE})
 public class CarController {
 
     private CarService carService;
@@ -33,23 +29,23 @@ public class CarController {
     @GetMapping
     public ResponseEntity<Resources<Car>> getAllCars() {
         List<Car> cars = carService.getCars();
-        addCarLink(cars);
-        Resources<Car> resources = getCarsResources(cars);
+        carService.addCarLink(cars);
+        Resources<Car> resources = carService.getCarsResources(cars);
         return new ResponseEntity<>(resources, HttpStatus.OK);
     }
 
     @GetMapping(params = "color")
     public ResponseEntity<Resources<Car>> getCarsByColor(@RequestParam("color") String color) {
         List<Car> cars = carService.getCarByColor(color);
-        addCarLink(cars);
-        addColorLink(cars);
-        Resources<Car> resources = getCarsResources(cars);
+        carService.addCarLink(cars);
+        carService.addColorLink(cars);
+        Resources<Car> resources = carService.getCarsResources(cars);
         return new ResponseEntity<>(resources, HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Resource<Car>> getCar(@PathVariable("id") long id) {
-        return getResourceResponseEntity(id);
+        return carService.getResourceResponseEntity(id);
     }
 
     @PostMapping
@@ -91,32 +87,4 @@ public class CarController {
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-
-    private ResponseEntity<Resource<Car>> getResourceResponseEntity(long id) {
-        try {
-            Resource<Car> carLink = getCarResource(id);
-            return new ResponseEntity<>(carLink, HttpStatus.OK);
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        }
-    }
-
-    private void addCarLink(List<Car> cars) {
-        cars.forEach(car -> car.add(linkTo(CarController.class).slash(car.getCarId()).withSelfRel()));
-    }
-
-    private void addColorLink(List<Car> cars) {
-        cars.forEach(car -> car.add(linkTo(CarController.class).withRel("colors")));
-    }
-
-    private Resource<Car> getCarResource(long id) {
-        Link link = linkTo(CarController.class).slash(id).withSelfRel();
-        Optional<Car> car = carService.getCar(id);
-        return new Resource<>(car.get(), link);
-    }
-
-    private Resources<Car> getCarsResources(List<Car> cars) {
-        Link link = linkTo(CarController.class).withSelfRel();
-        return new Resources<>(cars, link);
-    }
 }
